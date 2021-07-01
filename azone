@@ -70,18 +70,22 @@ usage () {
     cat <<END
 
 ${ul}USAGE${reset}
-    ${bold}azone [command] ZONE${reset}
+    ${bold}azone [command] ${it}ZONE${xit}${reset}
 
 ${ul}COMANDS${reset}
-    sign     ZONE    Creates a signed zonefile for ZONE at ZONE.signed
-    keygen   ZONE    Generates new ksk and zsk keys for ZONE
-    view     ZONE    View info about ZONE and its active DS & DNSKEY records
-    test     ZONE    Locally validates DNSSEC for signed ZONE using the DS as trust anchor
-       -g                 global validation from the live root trust anchor through ZONE
-    import   PATH    Find and import existing DNSSEC keys in the directory located at PATH
-    update           Tell NSD to configure new zones and reload & reread all existing zones
-    list             List all zones
+    sign     ${it}ZONE${xit}    Creates a signed zonefile for ${it}ZONE${xit} at ${it}ZONE${xit}.signed
+    keygen   ${it}ZONE${xit}    Generates new ksk and zsk keys for ${it}ZONE${xit}
+    view     ${it}ZONE${xit}    View info about ${it}ZONE${xit} and its active DS & DNSKEY records
+    test     ${it}ZONE${xit}    Locally validates DNSSEC for signed ${it}ZONE${xit}
+       -g                 global validation from the live root trust anchor
+                          through the locally signed ${it}ZONE${xit}
+    import   ${it}PATH${xit}    Find and import existing DNSSEC keys in the directory
+                     located at ${it}PATH${xit}
+    update           Tell NSD to make changes live by configuring new zones
+                     and reloading & rereading all existing zones
+    list             List available zonefiles
        -k                 list the zones for which we have DNSSEC keys
+       -s                 list zones currently being served by NSD
     help             Display this help message
        -a                 show additional information
     version          Display version of azone
@@ -118,7 +122,7 @@ END
     fi
 }
 
-# COMMAND: keygen
+# KEYGEN
 keygen () {
     cd $KEYDIR || exit 13
     [[ ! -d $ZONE ]] && mkdir $ZONE     # If ZONE doesn't already have a sub-directory, make one.
@@ -139,10 +143,10 @@ keygen () {
     if [[ -f ${KSK}.private || -f ${ZSK}.private ]]; then
         echo -e "\n${bold}Found existing keys for ${ZONE}.${reset}"
         echo -e "Any freshly generated key pairs will be the new"
-        echo -e "actively used keys for this domain. None of the"
+        echo -e "actively used set for this domain. None of the"
         echo -e "pre-existing keys will be deleted though.\n"
         confirm "Continue generating new key set?" \
-            && echo -e "  Alright, creating new keys and setting them as active for ${ZONE}!" \
+            && echo -e "  Alright, creating new keys ${ZONE}!" \
             || { echo -e "——${yellow}Key generation aborted${reset}.\n"; exit 12; }
         mv ksk ksk.old; mv zsk zsk.old; mv ds ds.old           # Archive previously active pointer files
     fi
@@ -152,13 +156,13 @@ keygen () {
     $LDNS_KEYGEN -a ECDSAP256SHA256 -b 2048 -k $ZONE > ksk     # Store active KSK prefix
     $LDNS_KEYGEN -a ECDSAP256SHA256 -b 1024 $ZONE > zsk        # Store active ZSK prefix
     mv $(cat ksk).ds ds                                        # Store DS record for active KSK
-    echo -e "Done.\n"
+    echo -e "${green}Done${reset}\n"
 
     secure_keys
     exit 0
 }
 
-# COMMAND: sign
+# SIGN
 sign () {
     inception=$(date -u "+%Y%m%d%H%M01")
     expiration=20000101000000
@@ -189,7 +193,7 @@ sign () {
     fi
 }
 
-# COMMAND: test
+# TEST
 validate () {
     if [[ -z $1 ]]; then
         echo -e "\n——${red}Error${reset}: no zone given to test\n"
@@ -222,7 +226,7 @@ validate () {
     fi
 }
 
-# COMMAND: view
+# VIEW
 zoneview () {
     # check_pointers
     if ! check_zonefile; then
@@ -256,7 +260,7 @@ zoneview () {
     exit 0
 }
 
-# COMMAND: list
+# LIST
 zonelist () {
     case $1 in
         -k)
@@ -264,9 +268,9 @@ zonelist () {
             ls -1 ${KEYDIR} | sed -E 's/(.+)/  \1/'; echo ""
             exit 0
             ;;
-        -l)
+        -s)
             if [[ -x $NSD_CONTROL ]]; then
-                sudo $NSD_CONTROL zonestatus | sed -E -e '/state:/d' -e 's/zone:\t//' # @DEV
+                sudo $NSD_CONTROL zonestatus | sed -E -e '/state:/d' -e 's/zone:\t//'
             else
                 echo -e "\n——${red}Error${reset}: NSD not installed or nsd-control not accessible in \$PATH\n"
                 exit 16
@@ -285,7 +289,7 @@ zonelist () {
     esac
 }
 
-# COMMAND: update
+# UPDATE
 nsd_update () {
     local zone; local name
     local signed="${ZONEDIR}/signed/*.signed"
@@ -328,8 +332,8 @@ nsd_update () {
     secure_keys; exit 0
 }
 
-# COMMAND: import
-import () {
+# IMPORT
+keyimport () {
     import_keydir=$1
     if [[ -z $import_keydir ]]; then
         echo -e "——${red}Error${reset}: you must specify a directory path where existing keys are located"
@@ -591,7 +595,7 @@ case $COMMAND in
             keygen)
                 keygen
                 ;;
-            view | show)
+            view | show | info)
                 zoneview
                 ;;
             test | validate)
@@ -607,7 +611,7 @@ case $COMMAND in
                 check_pointers # @DEV
                 ;;
             import)
-                import $2
+                keyimport $2
                 ;;
             *)
                 echo "——${red}Error${reset}: unknown command"
