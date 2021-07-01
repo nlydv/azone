@@ -5,4 +5,4 @@
 SHELL=/bin/bash
 PATH=/usr/local/sbin:/usr/local/bin:/sbin:/bin:/usr/sbin:/usr/bin:/etc/nsd:/etc/nsd/azone
 
-1 3 * * 0 root azone sign example.com && nsd-control reload
+# 1 3 * * 0 root azone sign example.com && nsd-control reload

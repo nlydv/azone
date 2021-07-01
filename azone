@@ -10,7 +10,7 @@
 # Author:   Neel Yadav
 # Date:     06.27.2021
 
-VERSION=0.1.0
+VERSION=0.1.1
 COMMAND=$1
 ZONE=$2
 
@@ -490,7 +490,7 @@ deconfig_main () {
         i=$(sed -n -E "/name: ${name}$/=" ${NSDCONF})
         (( h = i - 1 )); (( j = i + 1 ))
         sed -i.backup -e ${i}d -e ${h}d -e ${j}d $NSDCONF || return 1
-        mv ${NSDCONF}.backup ${DATADIR}
+        rm ${NSDCONF}.backup
     fi
 
     return 0
@@ -512,7 +512,7 @@ autosign_cron () {
 
 secure_keys () {
     chown -R root $KEYDIR           # group has limited read-only perms so it can be whatev
-    chmod u=rwx,g=rx,o=r $KEYDIR
+    chmod u=rwx,g=rx,o=rx $KEYDIR
 
     local files="${KEYDIR}/*"
     for i in $files; do
