@@ -72,7 +72,7 @@ usage () {
 ${ul}USAGE${reset}
     ${bold}azone [command] ${it}ZONE${xit}${reset}
 
-${ul}COMANDS${reset}
+${ul}COMMANDS${reset}
     sign     ${it}ZONE${xit}    Creates a signed zonefile for ${it}ZONE${xit} at ${it}ZONE${xit}.signed
     keygen   ${it}ZONE${xit}    Generates new ksk and zsk keys for ${it}ZONE${xit}
     view     ${it}ZONE${xit}    View info about ${it}ZONE${xit} and its active DS & DNSKEY records
@@ -565,6 +565,7 @@ calc_expire () {
 }
 
 # Output color/style vars
+# ———————————————————————
 reset=$(tput sgr0)
 bold=$(tput bold)
 ul=$(tput smul)
