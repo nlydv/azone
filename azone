@@ -246,20 +246,26 @@ zoneview () {
         fi
     elif [[ -f ${SIGNED} ]]; then
         local SIGNED=${SIGNED}
+        _soa="$(cat $SIGNED | head -1 | sed -E 's/.* ([0-9]+) [0-9]+ [0-9]+ [0-9]+ [0-9]+$/\1/')"
     else
         local SIGNED="${red}not found${reset}"
+        _soa="none"
     fi
 
     echo -e "\n${bold}${ul}${ZONE}${reset}"
     echo -e "  Zonefile:  ${ZONEFILE}"
     echo -e "  Signed:    ${SIGNED}"
+    [[ ! $_soa == "none" ]] && echo -e "  Serial:    ${_soa}"
 
     if [[ ! -f ${KSK}.private || ! -f ${ZSK}.private ]]; then
         echo -e "  DNSSEC:    ${red}no active signing keys${reset}\n"
     else
-        echo -e "  DNSSEC:    $(cat ${KEYDIR}/${ZONE}/ds)"
-        echo -e "             $(cat ${KSK}.key)"
-        echo -e "             $(cat ${ZSK}.key)\n"
+        _ds="$(cat ${KEYDIR}/${ZONE}/ds | sed -E -e 's/example\.com\..*DS(.*)/\1/' | grep -o -E "[a-z0-9 ]+")"
+        _ksk="$(cat ${KSK}.key | sed -E 's/.*(257 3 13 .*) [;].*/\1/')"
+        _zsk="$(cat ${ZSK}.key | sed -E 's/.*(256 3 13 .*) [;].*/\1/')"
+        echo -e "  DNSSEC:    ${ZONE}. IN DS ${_ds}"
+        echo -e "             ${ZONE}. IN DNSKEY ${_ksk}"
+        echo -e "             ${ZONE}. IN DNSKEY ${_zsk}\n"
     fi
 
     exit 0
