@@ -40,17 +40,17 @@ NSD_CONTROL=$(which nsd-control)
 initialize () {
     # || -z $NSD_CONTROL || -z $(which nsd)
     if [[ -z $LDNS_KEYGEN || -z $LDNS_SIGN || -z $LDNS_VERIFY || -z $LDNS_KEY2DS ]]; then
-        echo -e "\n——${red}Error${reset}: ldns command line tools are either not installed or are not accessible from \$PATH\n"
+        echo -e "\n${red}${bold}✖ ${reset}${bold}Error${reset} — ldns command line tools are either not installed or are not accessible from \$PATH\n"
         exit 13
     elif [[ ! $EUID == 0 ]]; then
-        echo -e "\n——${red}Error${reset}: azone should only be used with root permissions\n"
+        echo -e "\n${yellow}${bold}！${reset}sudo permissions required\n"
         exit 13
     fi
 
     if [[ $ZONEDIR == "/etc/nsd/azone" ]]; then
         [[ ! -d $ZONEDIR ]] && mkdir $ZONEDIR
     else
-        echo -e "\n——${red}Error${reset}: non-default ZONEDIR directory does not exist — ${ZONEDIR}\n"
+        echo -e "\n${red}${bold}✖ ${reset}${bold}Error${reset} — non-default ZONEDIR directory does not exist — ${ZONEDIR}\n"
         exit 13
     fi
 
@@ -133,7 +133,7 @@ keygen () {
         echo -e "\n${bold}Couldn't find zonefile for ${ZONE}.${reset}\n"
         confirm "  Generate keys anyway?" \
             && echo -e "  Ok, brand new set of keys coming up!" \
-            || { echo -e "——${yellow}Key generation aborted${reset}\n"; exit 12; }
+            || { echo -e "${yellow}${bold}！${reset}Key generation aborted${reset}\n"; exit 12; }
     fi
 
     # Check if a file named 'ksk' or 'zsk' exists in ZONE's dedicated sub-directory within KEYDIR.
@@ -146,17 +146,23 @@ keygen () {
         echo -e "actively used set for this domain. None of the"
         echo -e "pre-existing keys will be deleted though.\n"
         confirm "Continue generating new key set?" \
-            && echo -e "  Alright, creating new keys ${ZONE}!" \
-            || { echo -e "——${yellow}Key generation aborted${reset}.\n"; exit 12; }
+            || { echo -e "${yellow}${bold}！${reset}Key generation aborted${reset}.\n"; exit 12; }
         mv ksk ksk.old; mv zsk zsk.old; mv ds ds.old           # Archive previously active pointer files
     fi
 
-    echo -e "\nGenerating DNSSEC keys for ${ZONE}..."
+    printf "\n  Generating keys..."; sleep 1
     # @TODO: is an entropy check before creating DNSSEC keys of this size worth the effort?
-    $LDNS_KEYGEN -a ECDSAP256SHA256 -b 2048 -k $ZONE > ksk     # Store active KSK prefix
-    $LDNS_KEYGEN -a ECDSAP256SHA256 -b 1024 $ZONE > zsk        # Store active ZSK prefix
-    mv $(cat ksk).ds ds                                        # Store DS record for active KSK
-    echo -e "${green}Done${reset}\n"
+    $LDNS_KEYGEN -a ECDSAP256SHA256 -b 2048 -k $ZONE 1> ksk 2> err.tmp     # Store active KSK prefix
+    $LDNS_KEYGEN -a ECDSAP256SHA256 -b 1024 $ZONE 1> zsk 2> err.tmp        # Store active ZSK prefix
+    mv $(cat ksk).ds ds                                                    # Store DS record for active KSK
+    if [[ -z "$(cat err.tmp)" ]]; then
+        printf "\r${green}${bold}✓${reset} Generating keys... ${bold}done${reset}\n\n"
+        rm err.tmp
+    else
+        printf "\n${red}${bold}✖ ${reset}${bold}Error${reset} — something went wrong during key creation\n\n"
+        rm err.tmp
+        exit 11
+    fi
 
     secure_keys
     exit 0
@@ -165,16 +171,16 @@ keygen () {
 # SIGN
 sign () {
     inception=$(date -u "+%Y%m%d%H%M01")
-    expiration=20000101000000
+    expiration=19691231235959
     calc_expire
 
     [[ -d ${ZONEDIR}/signed ]] || mkdir signed
     [[ -d ${KEYDIR}/${ZONE} ]] && check_pointers
     if ! check_zonefile; then
-        echo -e "\n——${red}Error${reset}: unable to locate zonefile for ${ZONE}\n"
+        echo -e "\n${red}${bold}✖ ${reset}${bold}Error${reset} — unable to locate zonefile for ${ZONE}\n"
         exit 13
     elif [[ ! -f ${KSK}.private || ! -f ${ZSK}.private ]]; then
-        echo -e "\n——${red}Error${reset}: unable to locate signing keys for ${ZONE}"
+        echo -e "\n${red}${bold}✖ ${reset}${bold}Error${reset} — unable to locate signing keys for ${ZONE}"
         echo -e "  Try generating a new set of keys: ${bold}azone keygen ${ZONE}${reset}\n"
         exit 13
     elif [[ $(grep --count "SIGNED_ON" $ZONEFILE) == 1 ]]; then
@@ -184,11 +190,10 @@ sign () {
     $LDNS_SIGN -o $ZONE -f $SIGNED -i $inception -e $expiration - $KSK $ZSK < <(sed s/SIGNED_ON/$serial/ $ZONEFILE)
 
     if [[ $? == 0 ]]; then
-        echo -e "\n  ${green}Signed! ${reset}"
-        echo -e "  Output: signed/${ZONE}.signed\n"
+        echo -e "\n${green}${bold}✓${reset} ${bold}Signed! ${reset}${serial}\n"
         exit 0
     else
-        echo -e "\n——${red}Error${reset}: something went wrong while trying to sign ${ZONE}.\n"
+        echo -e "\n${red}${bold}✖ ${reset}${bold}Error${reset} — something went wrong while trying to sign ${ZONE}.\n"
         exit 11
     fi
 }
@@ -196,7 +201,7 @@ sign () {
 # TEST
 validate () {
     if [[ -z $1 ]]; then
-        echo -e "\n——${red}Error${reset}: no zone given to test\n"
+        echo -e "\n${red}${bold}✖ ${reset}${bold}Error${reset} — no zone given to test\n"
         exit 15
     elif [[ -n $2 ]]; then
         if [[ $1 == "-g" || $2 == "-g" ]]; then
@@ -205,7 +210,7 @@ validate () {
             local signed=${ZONEDIR}/signed/${zone}.signed
             valcmd="$LDNS_VERIFY -V 0 -k ${DATADIR}/icann.root.key -k ${DATADIR}/hns.root.key -S ${signed}"
         else
-            echo -e "\n——${red}Error${reset}: invalid command option\n"
+            echo -e "\n${red}${bold}✖ ${reset}${bold}Error${reset} — invalid command option\n"
             exit 15
         fi
     else
@@ -215,13 +220,13 @@ validate () {
     fi
 
     if [[ ! -f ${signed} ]]; then
-        echo -e "\n——${red}Error${reset}: $(basename ${signed}) not found\n"
+        echo -e "\n${red}${bold}✖${reset} ${bold}Error${reset} — $(basename ${signed}) not found\n"
         exit 13
     elif $valcmd; then
-        echo -e "\n  ${green}Signed zonefile is valid.${reset}\n"
+        echo -e "\n${green}${bold}✓ ${reset}Signed zonefile is valid.${reset}\n"
         exit 0
     else
-        echo -e "\n  ${yellow}Failed to verify DNSSEC signatures.${reset}\n"
+        echo -e "\n${yellow}${bold}！${reset}Failed to verify DNSSEC signatures.${reset}\n"
         exit 11
     fi
 }
@@ -232,7 +237,7 @@ zoneview () {
     if ! check_zonefile; then
         if [[ ! -f ${KSK}.private || ! -f ${ZSK}.private ]]; then
             if ! check_pointers; then
-                echo -e "\n——${red}Error${reset}: no knowledge of zone\n"
+                echo -e "\n${red}${bold}✖${reset} ${bold}Error${reset} — no knowledge of zone\n"
                 exit 11
             fi
         else
@@ -264,21 +269,22 @@ zoneview () {
 zonelist () {
     case $1 in
         -k)
-            echo -e "\n${ul}${bold}DNSSEC Key Domains${reset}"
+            echo -e "\n${ul}${bold}Available DNSSEC Keys${reset}"
             ls -1 ${KEYDIR} | sed -E 's/(.+)/  \1/'; echo ""
             exit 0
             ;;
         -s)
             if [[ -x $NSD_CONTROL ]]; then
-                sudo $NSD_CONTROL zonestatus | sed -E -e '/state:/d' -e 's/zone:\t//'
+                echo -e "\n${ul}${bold}Zones Served by NSD${reset}"
+                sudo $NSD_CONTROL zonestatus | sed -E -e '/state:/d' -e 's/zone:\t//' -e 's/(.+)/  \1/'; echo ""
             else
-                echo -e "\n——${red}Error${reset}: NSD not installed or nsd-control not accessible in \$PATH\n"
+                echo -e "\n${red}${bold}✖${reset} ${bold}Error${reset} — NSD not installed or nsd-control not accessible in \$PATH\n"
                 exit 16
             fi
             exit 0
             ;;
         -*)
-            echo -e "\n——${red}Error${reset}: invalid command option\n"
+            echo -e "\n${red}${bold}✖${reset} ${bold}Error${reset} — invalid command option\n"
             exit 15
             ;;
         *)
@@ -301,7 +307,7 @@ nsd_update () {
         # If not using NSD, allow update cron (sans ` && nsd-control reload` command) but do not proceed further
         if [[ ! -x $NSD_CONTROL ]]; then
             autosign_cron
-            echo -e "\n——${red}Error${reset}: NSD not installed or nsd-control not accessible in \$PATH\n"
+            echo -e "\n${red}${bold}✖${reset} ${bold}Error${reset} — NSD not installed or nsd-control not accessible in \$PATH\n"
             exit 16
         fi
 
@@ -310,7 +316,7 @@ nsd_update () {
         fi
 
         if ! deconfig_main; then
-            echo -e "\n——${red}Error${reset}: ${name} defined in nsd.conf & couldn't move it to zones.conf\n"
+            echo -e "\n${red}${bold}✖${reset} ${bold}Error${reset} — ${name} defined in nsd.conf & couldn't move it to zones.conf\n"
             exit 13
         fi
 
@@ -326,8 +332,8 @@ nsd_update () {
     $NSD_CONTROL reconfig 1> /dev/null || exit        # Tell NSD to check nsd.conf for changes to zone definitions.
     $NSD_CONTROL reload 1> /dev/null || exit          # Tell NSD to reread the defined zonefiles, changes to which don't usually get picked up on reconfig.
 
-    [[ $abc == 1 ]] && printf "\n  ${yellow}info${reset} — Unable to symlink data/azone.cron to cron.d"
-    echo -e "\n  ${green}Success!${reset} Zone changes relayed to NSD.\n"
+    [[ $abc == 1 ]] && printf "\n${yellow}${bold}！${reset}Unable to symlink data/azone.cron to cron.d"
+    echo -e "\n${green}${bold}✓${reset} ${bold}Success! ${reset} Zone changes relayed to NSD.\n"
 
     secure_keys; exit 0
 }
@@ -336,15 +342,15 @@ nsd_update () {
 keyimport () {
     import_keydir=$1
     if [[ -z $import_keydir ]]; then
-        echo -e "——${red}Error${reset}: you must specify a directory path where existing keys are located"
+        echo -e "\n${red}${bold}✖${reset} ${bold}Error${reset} — you must specify a directory path where existing keys are located"
         exit 15
     elif [[ ! -d $import_keydir ]]; then
-        echo -e "——${red}Error${reset}: $import_keydir is not a directory"
+        echo -e "\n${red}${bold}✖${reset} ${bold}Error${reset} — $import_keydir is not a directory"
         exit 15
     else
         cd ${KEYDIR} || exit 13
         ls ${import_keydir}/K* | sed -E 's/.*K(.+)\.\+.*/\1/' | sort -u > imported
-        echo -e "\n  ${yellow}Imported Domains Keys:${reset}"
+        echo -e "\n${ul}${bold}Imported Domain Keys${reset}"
 
         local ZONE; local x=1
         while [[ -n $(sed -n ${x}p imported) ]]; do
@@ -371,7 +377,7 @@ keyimport () {
 get_serial () {
     today=$(date +%Y%m%d)
     count=0
-    last=19700101
+    last=19691231
 
     if [[ ! -w ${DATADIR}/serial-store ]]; then
         if [[ ! -d ${DATADIR} ]]; then
@@ -379,7 +385,8 @@ get_serial () {
         elif [[ ! -e ${DATADIR}/serial-store ]]; then
             echo 'example.com:0:0' > ${DATADIR}/serial-store
         else
-            echo "——${red}Error${reset}: unable to write to file '${DATADIR}/serial-store'"
+            echo -e "\n${red}${bold}✖${reset} ${bold}Error${reset} — unable to write to file '${DATADIR}/serial-store'\n"
+            exit 13
         fi
     fi
 
@@ -421,14 +428,15 @@ update_serial () {
 
 check_zonefile () {
     if [[ -z $ZONE ]]; then
-        echo -e "——${red}Error${reset}: a zone argument is required in the form of the domain's FQDN"
+        echo -e "${red}${bold}✖${reset} ${bold}Error${reset} — a zone argument is required in the form of the domain's FQDN"
         exit 15
     elif [[ ! -f $ZONEFILE ]]; then
         if [[ -f ${ZONEFILE}.zone ]]; then
+            echo -e "${yellow}${bold}！${reset}${bold}Warning${reset}"
             echo -e "\n${bold}No zonefile named ${it}${ZONE}${xit}, but found ${it}${ZONE}.zone${xit} file.${reset}"
-            echo -e "azone assumes the associated zonefile for ZONE is simply named ${it}<FQDN>${xit} by default"
-            echo -e "rather than the common naming scheme of ${it}<FQDN>.zone${xit} for simplicity's sake and"
-            echo -e "because errors may occur for domains underneath the .zone TLD.\n"
+            echo -e "By default, ${ul}azone${reset} assumes the associated zonefile for ZONE is simply named ${it}<FQDN>${xit}"
+            echo -e "rather than the common naming schemes of ${it}<FQDN>.zone${xit} or ${it}<FQDN>.txt${xit} for"
+            echo -e "the sake of simplicity and because errors may occur for domains underneath the .zone or .txt TLDs.\n"
             confirm "  Would you like to rename zonefile ${ZONE}.zone to ${ZONE} before continuing?" \
                 && { mv "${ZONEFILE}.zone" "${ZONEFILE}"; echo -e "  Ok, zonefile renamed."; } \
                 || ZONEFILE=${ZONEFILE}.zone
@@ -462,7 +470,7 @@ check_pointers () {
         local ZSK; ZSK=$(cat zsk)
 
         if [[ ! -f ${KSK}.key || ! -f ${ZSK}.key ]]; then
-            echo -e "——${red}Error${reset}: failed to regenerate KSK/ZSK pointer files"
+            echo -e "${red}${bold}✖ ${reset}${bold}Error${reset} — failed to regenerate KSK/ZSK pointer files"
             return 1
         else
             $LDNS_KEY2DS -n "$(cat ksk).key" | sed -E 's/\t[0-9]+(\tIN\tDS)/\1/' > ds   # Generate DS rr from active KSK
@@ -482,7 +490,7 @@ confirm() {
             return 0
             ;;
         *)
-            [[ $? -gt 128 ]] && echo -e "\n——${yellow}Response timeout (1m)${reset}" && exit 14
+            [[ $? -gt 128 ]] && echo -e "\n${yellow}${bold}！${reset}Response timeout (1m)\n" && exit 14
             return 1
             ;;
     esac
@@ -559,7 +567,7 @@ calc_expire () {
         expiration=$(date -u -j -f "%a %b %d %T %Z %Y" "$(date -u -j -v+36d -v+12H)" "+%Y%m%d%H%M02")
     # Assume the worst
     else
-        echo -e "\n——${red}Y2K${reset}: time is but a relative property of existence and an ephemeral illusion of the universe\n"
+        echo -e "\n${red}${bold}✖ ${reset}${bold}Y2K38${reset} — time is but a relative property of existence and an ephemeral illusion of the universe\n"
         exit 16
     fi
 }
@@ -614,7 +622,7 @@ case $COMMAND in
                 keyimport $2
                 ;;
             *)
-                echo "——${red}Error${reset}: unknown command"
+                echo -e "\n${red}${bold}✖ ${reset}${bold}Error${reset} — unknown command\n"
                 exit 15
                 ;;
         esac
