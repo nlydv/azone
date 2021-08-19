@@ -377,6 +377,21 @@ keyimport () {
     exit 0
 }
 
+# NEW
+newzone () {
+    domain=$1;
+    if [[ -z $domain ]]; then
+        echo "no domain given"
+        exit 15
+    fi;
+
+    cd ${ZONEDIR} || exit 13
+
+    cp ${DATADIR}/abstract.example $domain;
+    sed -i.old -E -e "s/plain\.azone\./${domain}\./" -e "s/plain\.azone\./${domain}\./" $domain;
+    rm ${domain}.old
+}
+
 # AUXILIARY: functions only called internally by other functions
 # ——————————————————————————————————————————————————————————————
 
@@ -621,11 +636,14 @@ case $COMMAND in
             list | ls)
                 zonelist $2
                 ;;
-            regen)
-                check_pointers # @DEV
+            regen) # @DEV
+                check_pointers
                 ;;
             import)
                 keyimport $2
+                ;;
+            new) # @DEV
+                newzone $2
                 ;;
             *)
                 echo -e "\n${red}${bold}✖ ${reset}${bold}Error${reset} — unknown command\n"
