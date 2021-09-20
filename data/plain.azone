@@ -1,0 +1,66 @@
+$ORIGIN	plain.azone.
+$TTL 600
+
+@	IN	SOA	n1.plain.azone. hostmaster.plain.azone. (
+			SIGNED_ON       ; Serial number
+                        3600            ; (60m) secondary refresh interval
+                        900             ; (15m) secondary retry if no reply
+                        604800          ; (7d)  secondary del zone if no reply
+                        300             ; (5m)	NXDOMAIN response cache TTL
+			)
+
+; Nameservers
+@	IN	NS	n1.plain.azone.
+@	IN	NS	n2.plain.azone.
+
+; Website Records
+@	IN	A	10.0.0.1
+blog	IN	A	10.0.0.2
+www	IN	CNAME	plain.azone.
+
+; Email Records
+@	IN	MX	10 mx1.plain.azone.
+@	IN	MX	20 mx2.plain.azone.
+mx1	IN	A	10.0.1.0
+mx2	IN	A	10.0.2.0
+@	IN	TXT	"v=spf1 mx -all"
+
+; Misc.
+_btc	IN	TXT	"btc: bc1q9neel7y34q9eu7ex42sa86dxl6cdujq9ktcxfz"
+_eth	IN	TXT	"eth: 0x82aa7f697B9Bc19F286D286D130405c0850A2E7B"
+_hns	IN	TXT	"hns: hs1qfywhs02f3ars7zd0uj4ztfnhvsrd34e5s7w2uc"
+
+; ——————REFERENCE NOTES——————
+;
+; The $ORIGIN value at the very top is the zone's fully-qualified "apex" domain, or
+; in otherwords, the domain that this zone applies to and for which all unqualified
+; domain names are assumed to be a subdomain of.
+;
+; The $TTL value at the top of the file is the default cache length in seconds, the
+; length of time that a resolver should wait after getting a record from you before
+; they come back to ask for a "fresh" copy to see if there's been any changes to it.
+; 
+; Each record can be given its own unique TTL value, but if omitted, the default is
+; applied:
+;   $TTL 600
+;   ┍╸blog   10  IN  A  127.0.0.1
+;   ┝╸work       IN  A  127.0.0.2
+;   │
+;   ╞╸blog   10 . . . . . . . . .
+;   ╘╸work  600 . . . . . . . . .
+;
+; Record names (unqualified) equate to subdomains of the apex, while omitting them
+; uses the same name as the last record to specify one (or apex if none exists): 
+;   art  ─>  art.plain.azone.
+;        ─>  art.plain.azone.
+;     @  ─>  plain.azone.
+;   www  ─>  www.plain.azone.
+;
+; Generally, if you don't add the trailing dot at the end of a domain name, it will
+; be assumed to be a subdomain of the apex:
+;   ┍╸mx1  IN  MX  10 mx1.mail
+;   ┝╸mx2  IN  MX  20 mx2.mail.
+;   │
+;   ╞╸mx1 . . . . . . mx1.mail.plain.azone.
+;   ╘╸mx2 . . . . . . mx2.mail.
+;
