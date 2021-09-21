@@ -1,0 +1,33 @@
+{
+  "name": "azone",
+  "version": "1.0.0-alpha",
+  "description": "DNSSEC zone signing and key management CLI tool & NodeJS API. This tool simplifies the use of NSD, an authoritative-only DNS name server, and the various related ldns tools.",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/nlydv/azone.git"
+  },
+  "keywords": [
+    "dns",
+    "dnssec",
+    "zone-file",
+    "nsd",
+    "ldns",
+    "zone-signing",
+    "domain",
+    "handshake",
+    "hns"
+  ],
+  "author": "Neel Yadav",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/nlydv/azone/issues"
+  },
+  "homepage": "https://github.com/nlydv/azone",
+  "dependencies": {
+    "shelljs": "^0.8.4"
+  }
+}

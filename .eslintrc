@@ -1,0 +1,33 @@
+{
+    "env": {
+        "browser": false,
+        "node": true,
+        "es6": true,
+        "shelljs": true
+    },
+    "parserOptions": {
+        "ecmaVersion": "latest"
+    },
+    "extends": "eslint:recommended",
+    "rules": {
+        "indent": [
+            "error",
+            4,
+            { "SwitchCase": 1 }
+        ],
+        "linebreak-style": [
+            "error",
+            "unix"
+        ],
+        "quotes": [
+            "error",
+            "double"
+        ],
+        "semi": [
+            "error",
+            "always"
+        ],
+        "no-unused-vars": "off",
+        "array-bracket-spacing": "off"
+    }
+}

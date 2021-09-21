@@ -1,0 +1,5 @@
+node_modules/
+spec/fixtures/
+dist/
+**/vendor/*.js
+**/*.min.js
