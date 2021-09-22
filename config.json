@@ -1,0 +1,10 @@
+{
+    "main": "/etc/nsd/azone",
+    "zonedir": null,
+    "datadir": "data",
+    "keydir": "keys",
+    "nsd": {
+        "main": "/etc/nsd",
+        "conf": "nsd.conf"
+    }
+}
