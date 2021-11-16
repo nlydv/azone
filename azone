@@ -233,7 +233,6 @@ validate () {
 
 # VIEW
 zoneview () {
-    # check_pointers
     if ! check_zonefile; then
         if [[ ! -f ${KSK}.private || ! -f ${ZSK}.private ]]; then
             if ! check_pointers; then
@@ -260,7 +259,7 @@ zoneview () {
     if [[ ! -f ${KSK}.private || ! -f ${ZSK}.private ]]; then
         echo -e "  DNSSEC:    ${red}no active signing keys${reset}\n"
     else
-        _ds="$(cat ${KEYDIR}/${ZONE}/ds | sed -E -e 's/example\.com\..*DS(.*)/\1/' | grep -o -E "[a-z0-9 ]+")"
+        _ds="$(cat ${KEYDIR}/${ZONE}/ds | sed -E -e 's/.*DS(.*)/\1/' | grep -o -E "[a-z0-9 ]+")"
         _ksk="$(cat ${KSK}.key | sed -E 's/.*(257 3 13 .*) [;].*/\1/')"
         _zsk="$(cat ${ZSK}.key | sed -E 's/.*(256 3 13 .*) [;].*/\1/')"
         echo -e "  DNSSEC:    ${ZONE}. IN DS ${_ds}"
