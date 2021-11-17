@@ -233,7 +233,6 @@ validate () {
 
 # VIEW
 zoneview () {
-    # check_pointers
     if ! check_zonefile; then
         if [[ ! -f ${KSK}.private || ! -f ${ZSK}.private ]]; then
             if ! check_pointers; then
@@ -260,7 +259,7 @@ zoneview () {
     if [[ ! -f ${KSK}.private || ! -f ${ZSK}.private ]]; then
         echo -e "  DNSSEC:    ${red}no active signing keys${reset}\n"
     else
-        _ds="$(cat ${KEYDIR}/${ZONE}/ds | sed -E -e 's/example\.com\..*DS(.*)/\1/' | grep -o -E "[a-z0-9 ]+")"
+        _ds="$(cat ${KEYDIR}/${ZONE}/ds | sed -E -e 's/.*DS(.*)/\1/' | grep -o -E "[a-z0-9 ]+")"
         _ksk="$(cat ${KSK}.key | sed -E 's/.*(257 3 13 .*) [;].*/\1/')"
         _zsk="$(cat ${ZSK}.key | sed -E 's/.*(256 3 13 .*) [;].*/\1/')"
         echo -e "  DNSSEC:    ${ZONE}. IN DS ${_ds}"
@@ -548,15 +547,18 @@ PATH=/usr/local/sbin:/usr/local/bin:/sbin:/bin:/usr/sbin:/usr/bin:/etc/nsd:/etc/
 END
     fi
 
-    if ! grep -q "azone sign ${name}" ${DATADIR}/azone.cron; then
+    if ! grep -q "azone sign -q ${name}" ${DATADIR}/azone.cron; then
         if [[ -x $NSD_CONTROL ]]; then
-            echo "$(( $RANDOM % 59 + 1 )) 3 * * 0 root azone sign $(basename ${name}) && nsd-control reload" >> ${DATADIR}/azone.cron
+            echo "$(( $RANDOM % 59 + 1 )) 3 * * 0 root azone sign -q $(basename ${name}) && nsd-control reload &> /dev/null" >> ${DATADIR}/azone.cron
         else
-            echo "$(( $RANDOM % 59 + 1 )) 3 * * 0 root azone sign $(basename ${name})" >> ${DATADIR}/azone.cron
+            echo "$(( $RANDOM % 59 + 1 )) 3 * * 0 root azone sign -q $(basename ${name})" >> ${DATADIR}/azone.cron
         fi
     fi
 
     if [[ -d /etc/cron.d ]]; then
+        chown root:root ${DATADIR}/azone.cron
+        chmod u=rw,g=r,o=r ${DATADIR}/azone.cron
+
         if [[ ! -f /etc/cron.d/azone ]]; then
             ln -s ${DATADIR}/azone.cron /etc/cron.d/azone || return 1
         fi
@@ -620,7 +622,7 @@ case $COMMAND in
         initialize
         case $COMMAND in
             sign)
-                sign
+                [[ $2 == "-q" ]] && $0 sign $3 &> /dev/null || sign
                 ;;
             keygen)
                 keygen
@@ -632,7 +634,7 @@ case $COMMAND in
                 validate $2 $3
                 ;;
             update)
-                nsd_update $2
+                [[ $2 == "-q" ]] && nsd_update $3 &> /dev/null || nsd_update $2
                 ;;
             list | ls)
                 zonelist $2
