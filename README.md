@@ -1,7 +1,7 @@
 # azone
 DNSSEC zone signing and key management command-line tool. This bash wrapper script simplifies the use of [NSD](https://github.com/NLnetLabs/nsd), an authoritative-only DNS nameserver, and some of its related [ldns](https://github.com/NLnetLabs/ldns) tools.
 ![azone help screenshot](https://files.neelyadav.com/misc/azone-preview-2.png)
-#### Purpose
+## Purpose
 For those wanting to operate their own authoritative DNS server while also implementing DNSSEC, the number of moving parts involved, all the functions, options, parameters, etc. of the numerous dnssec-* or ldns-* CLI tools one would have to remember, makes it a much more involved, cumbersome, and time consuming task than it really needs to be.
 
 Surprisingly, there aren't a whole lot of simple free or open source tools out there (that I could find) that streamlines all of this for anyone wanting to self-host their domains.
@@ -111,3 +111,9 @@ Since this tool originally started as a few simple helper functions, the use of 
 I may or may not convert this to a NodeJS package in the near future so that I can more easily use it as part of another project.
 
 Contributions/suggestions always welcome though.
+
+## License
+
+Everything here is free and open-sourced, feel free to use it for whatever.
+
+_MIT license in [LICENSE](https://github.com/nlydv/azone/blob/master/LICENSE) file_

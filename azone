@@ -1,5 +1,7 @@
 #!/usr/bin/env bash
 #
+# Copyright (c) 2021 Neel Yadav (MIT License)
+#
 # Name:     azone
 # Desc:     DNSSEC zone signing and key management bash script.
 #           This command-line tool simplifies the use of NSD, an
