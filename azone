@@ -8,9 +8,9 @@
 #
 # Source:   https://github.com/nlydv/azone
 # Author:   Neel Yadav
-# Date:     09.19.2021
+# Date:     11.17.2021
 
-VERSION=0.1.2
+VERSION=0.1.3
 COMMAND=$1
 ZONE=$2
 
@@ -614,7 +614,7 @@ case $COMMAND in
         exit 0
         ;;
     version)
-        echo "azone v$VERSION — September 2021"
+        echo "azone v$VERSION — November 2021"
         echo "Source: https://github.com/nlydv/azone"
         exit 0
         ;;
