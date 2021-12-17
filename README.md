@@ -114,6 +114,4 @@ Contributions/suggestions always welcome though.
 
 ## License
 
-Everything here is free and open-sourced, feel free to use it for whatever.
-
-_MIT license in [LICENSE](https://github.com/nlydv/azone/blob/master/LICENSE) file_
+This project is licensed under the terms of the **MIT license** _(see [LICENSE](https://github.com/nlydv/azone/blob/master/LICENSE) file published therein)_.
